@@ -792,19 +792,21 @@ class Terminal:
         of all visible characters.
         """
         rows = [[" " for _ in range(self.visible_right)] for _ in range(self.visible_top)]
-        is_wide_right = [[False for _ in range(self.visible_right)] for _ in range(self.visible_top)]
+        is_wide = [[False for _ in range(self.visible_right)] for _ in range(self.visible_top)]
         for character in sorted(self._visible_characters, key=lambda c: c.layer):
             row = character.motion.current_coord.row + self.canvas_row_offset
             column = character.motion.current_coord.column + self.canvas_column_offset
             if self.visible_bottom <= row <= self.visible_top and self.visible_left <= column <= self.visible_right:
-                rows[row - 1][column - 1] = character.animation.current_character_visual.formatted_symbol
-                if character.is_wide and character.input_symbol in character.animation.current_character_visual.formatted_symbol:
-                    is_wide_right[row - 1][column - 1] = True
-        for row in range(self.visible_top):
-            for column in range(1, self.visible_right):
-                if is_wide_right[row][column-1]:
-                    rows[row][column] = ""
-                    is_wide_right[row][column] = False
+                character_visual = character.animation.current_character_visual
+                rows[row - 1][column - 1] = character_visual.formatted_symbol
+                is_wide[row -1][column -1] = unicodedata.east_asian_width(character_visual.symbol) in ("W", "F") 
+        for i in range(self.visible_top):
+            for j in range(self.visible_right-1):
+                if is_wide[i][j]:
+                    if rows[i][j+1] != " ":
+                        rows[i][j] = " "
+                    else:
+                        rows[i][j+1] = ""
         terminal_state = ["".join(row) for row in rows]
         self.terminal_state = terminal_state
 
