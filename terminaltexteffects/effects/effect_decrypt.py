@@ -129,11 +129,15 @@ class DecryptIterator(BaseEffectIterator[DecryptConfig]):
         color = random.choice(self.config.ciphertext_colors)
         for _ in range(80):
             symbol = random.choice(self.encrypted_symbols)
+            if character.is_wide:
+                symbol += random.choice(self.encrypted_symbols)
             fast_decrypt_scene.add_frame(symbol, 3, color=color)
             duration = 3
         slow_decrypt_scene = character.animation.new_scene(id="slow_decrypt")
         for _ in range(random.randint(1, 15)):  # 1-15 longer duration units
             symbol = random.choice(self.encrypted_symbols)
+            if character.is_wide:
+                symbol += random.choice(self.encrypted_symbols)
             if random.randint(0, 100) <= 30:  # 30% chance of extra long duration
                 duration = random.randrange(50, 125)  # wide long duration range reduces 'waves' in the animation
             else:
@@ -148,9 +152,11 @@ class DecryptIterator(BaseEffectIterator[DecryptConfig]):
             typing_scene = character.animation.new_scene(id="typing")
             for block_char in ["▉", "▓", "▒", "░"]:
                 typing_scene.add_frame(block_char, 2, color=random.choice(self.config.ciphertext_colors))
-
+            symbol = random.choice(self.encrypted_symbols)
+            if character.is_wide:
+                symbol += random.choice(self.encrypted_symbols)
             typing_scene.add_frame(
-                random.choice(self.encrypted_symbols), 2, color=random.choice(self.config.ciphertext_colors)
+                symbol, 2, color=random.choice(self.config.ciphertext_colors)
             )
             self.typing_pending_chars.append(character)
 
