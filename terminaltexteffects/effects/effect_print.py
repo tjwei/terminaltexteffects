@@ -118,7 +118,7 @@ class PrintIterator(BaseEffectIterator[PrintConfig]):
                 characters = characters[:1]
             else:
                 right_extent = max(
-                    character.input_coord.column for character in characters if not character.is_fill_character
+                    character.input_coord.column+character.is_wide for character in characters if not character.is_fill_character
                 )
                 characters = [char for char in characters if char.input_coord.column <= right_extent]
             for character in characters:

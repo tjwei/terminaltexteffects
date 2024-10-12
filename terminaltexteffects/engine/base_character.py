@@ -8,6 +8,7 @@ from enum import Enum, auto
 
 from terminaltexteffects.engine import animation, motion
 from terminaltexteffects.utils.geometry import Coord
+import unicodedata
 
 
 class EventHandler:
@@ -204,6 +205,7 @@ class EffectCharacter:
         self.event_handler: EventHandler = EventHandler(self)
         self.layer: int = 0
         self.is_fill_character = False
+        self.is_wide = unicodedata.east_asian_width(symbol) in ("W", "F")
 
     @property
     def input_symbol(self) -> str:

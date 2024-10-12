@@ -21,7 +21,7 @@ from terminaltexteffects.engine.base_character import EffectCharacter
 from terminaltexteffects.utils import ansitools
 from terminaltexteffects.utils.argsdataclass import ArgField, ArgsDataClass
 from terminaltexteffects.utils.geometry import Coord
-
+import unicodedata
 
 @dataclass
 class TerminalConfig(ArgsDataClass):
@@ -407,6 +407,9 @@ class Terminal:
         self.character_by_input_coord: dict[Coord, EffectCharacter] = {
             (character.input_coord): character for character in self._input_characters
         }
+        self.character_wide_right_by_input_coord: dict[Coord, EffectCharacter] = {
+            (character.input_coord.right_one()): character for character in self._input_characters if character.is_wide
+        }
         self._fill_characters = self._make_fill_characters()
         self._visible_characters: set[EffectCharacter] = set()
         self._frame_rate = self.config.frame_rate
@@ -441,7 +444,8 @@ class Terminal:
         elif self.config.canvas_width == 0:
             canvas_width = self._terminal_width
         else:
-            input_width = max([len(line.rstrip()) for line in self._input_data.splitlines()])
+            input_width = max([sum(1+(unicodedata.east_asian_width(x) in ('W', 'F')) for x in line.rstrip())
+                                                       for line in self._input_data.splitlines()])
             if self.config.wrap_text and not self.config.ignore_terminal_dimensions:
                 canvas_width = min(self._terminal_width, input_width)
             else:
@@ -534,13 +538,18 @@ class Terminal:
         input_height = len(formatted_lines)
         input_characters: list[EffectCharacter] = []
         for row, line in enumerate(formatted_lines):
-            for column, symbol in enumerate(line, start=1):
+            column = 1
+            for symbol in line:
                 if symbol != " ":
                     character = EffectCharacter(self._next_character_id, symbol, column, input_height - row)
                     character.animation.use_xterm_colors = use_xterm_colors
                     character.animation.no_color = no_color
                     input_characters.append(character)
                     self._next_character_id += 1
+                if unicodedata.east_asian_width(symbol) in ("W", "F"):
+                    column += 2
+                else:
+                    column += 1
 
         anchored_characters = self.canvas._anchor_text(input_characters, self.config.anchor_text)
         return [char for char in anchored_characters if self.canvas.coord_is_in_canvas(char._input_coord)]
@@ -556,7 +565,7 @@ class Terminal:
         for row in range(1, self.canvas.top + 1):
             for column in range(1, self.canvas.right + 1):
                 coord = Coord(column, row)
-                if coord not in self.character_by_input_coord:
+                if coord not in self.character_by_input_coord and coord not in self.character_wide_right_by_input_coord:
                     fill_char = EffectCharacter(self._next_character_id, " ", column, row)
                     fill_char.is_fill_character = True
                     fill_char.animation.use_xterm_colors = self.config.xterm_colors
@@ -783,11 +792,19 @@ class Terminal:
         of all visible characters.
         """
         rows = [[" " for _ in range(self.visible_right)] for _ in range(self.visible_top)]
+        is_wide_right = [[False for _ in range(self.visible_right)] for _ in range(self.visible_top)]
         for character in sorted(self._visible_characters, key=lambda c: c.layer):
             row = character.motion.current_coord.row + self.canvas_row_offset
             column = character.motion.current_coord.column + self.canvas_column_offset
             if self.visible_bottom <= row <= self.visible_top and self.visible_left <= column <= self.visible_right:
                 rows[row - 1][column - 1] = character.animation.current_character_visual.formatted_symbol
+                if character.is_wide and character.input_symbol in character.animation.current_character_visual.formatted_symbol:
+                    is_wide_right[row - 1][column - 1] = True
+        for row in range(self.visible_top):
+            for column in range(1, self.visible_right):
+                if is_wide_right[row][column-1]:
+                    rows[row][column] = ""
+                    is_wide_right[row][column] = False
         terminal_state = ["".join(row) for row in rows]
         self.terminal_state = terminal_state
 

@@ -32,6 +32,10 @@ class Coord:
 
     column: int
     row: int
+    def right_one(self):
+        return Coord(self.column + 1, self.row)
+    def left_one(self):
+        return Coord(self.column - 1, self.row)
 
 
 def find_coords_on_circle(origin: Coord, radius: int, coords_limit: int = 0, unique: bool = True) -> list[Coord]:
