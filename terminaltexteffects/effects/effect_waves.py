@@ -170,13 +170,15 @@ class WavesIterator(BaseEffectIterator[WavesConfig]):
             self.terminal.canvas.top, self.terminal.canvas.right, self.config.final_gradient_direction
         )
         wave_gradient = Gradient(*self.config.wave_gradient_stops, steps=self.config.wave_gradient_steps)
+        wave_symbos = self.config.wave_symbols
+        wide_wave_symbols = [x+y for x, y in zip(wave_symbos, wave_symbos[:1]+wave_symbos[1:])] 
         for character in self.terminal.get_characters():
             self.character_final_color_map[character] = final_gradient_mapping[character.input_coord]
             wave_scn = character.animation.new_scene()
             wave_scn.ease = self.config.wave_easing
             for _ in range(self.config.wave_count):
                 wave_scn.apply_gradient_to_symbols(
-                    wave_gradient, self.config.wave_symbols, duration=self.config.wave_length
+                    wave_gradient, wide_wave_symbols if character.is_wide else wave_symbos, duration=self.config.wave_length
                 )
             final_scn = character.animation.new_scene()
             for step in Gradient(

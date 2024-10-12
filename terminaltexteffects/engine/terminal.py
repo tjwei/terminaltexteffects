@@ -799,7 +799,8 @@ class Terminal:
             if self.visible_bottom <= row <= self.visible_top and self.visible_left <= column <= self.visible_right:
                 character_visual = character.animation.current_character_visual
                 rows[row - 1][column - 1] = character_visual.formatted_symbol
-                is_wide[row -1][column -1] = unicodedata.east_asian_width(character_visual.symbol) in ("W", "F") 
+                symbol = character_visual.symbol
+                is_wide[row -1][column -1] = len(symbol)>1 or unicodedata.east_asian_width(symbol) in ("W", "F") 
         for i in range(self.visible_top):
             for j in range(self.visible_right-1):
                 if is_wide[i][j]:
